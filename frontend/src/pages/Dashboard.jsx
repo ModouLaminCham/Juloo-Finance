@@ -10,18 +10,13 @@ export default function Dashboard() {
   const [transactions, setTransactions] = useState([]);
   const [loanAmount, setLoanAmount] = useState("");
   const [loading, setLoading] = useState(true);
-
+  const [loanLoading, setLoanLoading] = useState(false);
+  const [loanMsg, setLoanMsg] = useState({ text: "", type: "" });
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!hasAccount) {
-      setTransactions([]);
-      setLoading(false);
-      return;
-    }
-
-    api
-      .get("transactions/history/")
+    if (!hasAccount) { setLoading(false); return; }
+    api.get("transactions/history/")
       .then((res) => setTransactions(res.data))
       .catch(() => setTransactions([]))
       .finally(() => setLoading(false));
@@ -29,88 +24,243 @@ export default function Dashboard() {
 
   const applyLoan = async () => {
     if (!loanAmount || Number(loanAmount) <= 0) {
+      setLoanMsg({ text: "Enter a valid amount.", type: "danger" });
       return;
     }
-
     try {
+      setLoanLoading(true);
       await api.post("loans/apply/", { loan_type: "General", amount: loanAmount });
       setLoanAmount("");
-      alert("Loan request submitted");
+      setLoanMsg({ text: "Loan application submitted successfully!", type: "success" });
     } catch (err) {
-      alert(err.response?.data?.detail || "Loan request failed");
+      setLoanMsg({ text: err.response?.data?.detail || "Loan request failed.", type: "danger" });
+    } finally {
+      setLoanLoading(false);
     }
   };
 
-  if (loading) return <div style={{ padding: 30 }}>Loading...</div>;
+  const totalDeposits = transactions
+    .filter((t) => t.transaction_type === "DEPOSIT")
+    .reduce((sum, t) => sum + Number(t.amount), 0);
+
+  const totalWithdrawals = transactions
+    .filter((t) => t.transaction_type !== "DEPOSIT")
+    .reduce((sum, t) => sum + Number(t.amount), 0);
+
+  if (loading) {
+    return (
+      <div className="d-flex align-items-center justify-content-center min-vh-100" style={{ background: "#F8FAFC" }}>
+        <div className="spinner-border" style={{ color: "#1E3A8A" }}></div>
+      </div>
+    );
+  }
 
   return (
-    <div style={styles.page}>
+    <div className="d-flex min-vh-100" style={{ background: "#F8FAFC" }}>
       <Sidebar hasAccount={hasAccount} />
 
-      <div style={styles.main}>
+      <div className="flex-grow-1 d-flex flex-column" style={{ minWidth: 0 }}>
         <Topbar />
 
         {!hasAccount ? (
-          <div style={styles.emptyWrapper}>
-            <div style={styles.emptyCard}>
-              <h2>No Account Found</h2>
-              <p>Create an account to start banking</p>
-              <button style={styles.primaryBtn} onClick={() => navigate("/create-account")}>
-                Open Account
+          <div className="flex-grow-1 d-flex align-items-center justify-content-center p-4">
+            <div className="text-center bg-white rounded-4 p-5" style={{ border: "0.5px solid #E2E8F0", maxWidth: 400 }}>
+              <div
+                className="d-flex align-items-center justify-content-center rounded-circle mx-auto mb-4"
+                style={{ width: 64, height: 64, background: "#EFF6FF" }}
+              >
+                <i className="bi bi-bank fs-3" style={{ color: "#1E3A8A" }}></i>
+              </div>
+              <h4 className="fw-semibold mb-2">No account yet</h4>
+              <p className="text-secondary mb-4" style={{ fontSize: 14 }}>
+                Create an account to start banking with Juloo Finance.
+              </p>
+              <button
+                className="btn text-white px-4"
+                style={{ background: "#1E3A8A" }}
+                onClick={() => navigate("/create-account")}
+              >
+                Open an account
               </button>
             </div>
           </div>
         ) : (
-          <div style={styles.container}>
-            <h2 style={{ marginBottom: 20 }}>Juloo Dashboard</h2>
+          <div className="p-4">
 
-            <div style={styles.balanceCard}>
-              <p>Total Balance</p>
-              <h1>GMD {Number(account.balance).toLocaleString()}</h1>
+            {/* PAGE TITLE */}
+            <div className="mb-4">
+              <h5 className="fw-semibold mb-0">Dashboard</h5>
+              <p className="text-secondary mb-0" style={{ fontSize: 13 }}>
+                Welcome back — here's your financial overview.
+              </p>
             </div>
 
-            <div style={styles.loanSection}>
-              <h3>Apply for Loan</h3>
+            {/* METRIC CARDS */}
+            <div className="row g-3 mb-4">
+              <div className="col-12 col-md-4">
+                <div
+                  className="rounded-3 p-4 text-white h-100"
+                  style={{ background: "#1E3A8A" }}
+                >
+                  <p className="mb-1" style={{ fontSize: 12, color: "#93C5FD" }}>
+                    <i className="bi bi-wallet2 me-1"></i> Total balance
+                  </p>
+                  <h3 className="fw-semibold mb-1">
+                    GMD {Number(account.balance).toLocaleString()}
+                  </h3>
+                  <p style={{ fontSize: 12, color: "#93C5FD" }} className="mb-0">
+                    Account #{account.account_number}
+                  </p>
+                </div>
+              </div>
 
-              <div style={styles.loanForm}>
-                <input
-                  type="number"
-                  placeholder="Enter amount"
-                  value={loanAmount}
-                  onChange={(e) => setLoanAmount(e.target.value)}
-                  style={styles.input}
-                />
+              <div className="col-6 col-md-4">
+                <div className="bg-white rounded-3 p-4 h-100" style={{ border: "0.5px solid #E2E8F0" }}>
+                  <p className="text-secondary mb-1" style={{ fontSize: 12 }}>
+                    <i className="bi bi-arrow-down-circle me-1 text-success"></i> Total received
+                  </p>
+                  <h5 className="fw-semibold mb-0">GMD {totalDeposits.toLocaleString()}</h5>
+                  <p className="text-secondary mb-0" style={{ fontSize: 12 }}>
+                    {transactions.filter((t) => t.transaction_type === "DEPOSIT").length} deposits
+                  </p>
+                </div>
+              </div>
 
-                <button onClick={applyLoan} style={styles.loanBtn}>
-                  Apply Loan
-                </button>
+              <div className="col-6 col-md-4">
+                <div className="bg-white rounded-3 p-4 h-100" style={{ border: "0.5px solid #E2E8F0" }}>
+                  <p className="text-secondary mb-1" style={{ fontSize: 12 }}>
+                    <i className="bi bi-arrow-up-circle me-1 text-danger"></i> Total sent
+                  </p>
+                  <h5 className="fw-semibold mb-0">GMD {totalWithdrawals.toLocaleString()}</h5>
+                  <p className="text-secondary mb-0" style={{ fontSize: 12 }}>
+                    {transactions.filter((t) => t.transaction_type !== "DEPOSIT").length} transactions
+                  </p>
+                </div>
               </div>
             </div>
 
-            <div style={styles.transactionBox}>
-              <h3>Recent Transactions</h3>
+            {/* BOTTOM ROW */}
+            <div className="row g-3">
 
-              {transactions.length === 0 ? (
-                <p>No transactions yet</p>
-              ) : (
-                transactions.slice(0, 5).map((tx) => (
-                  <div key={tx.id} style={styles.txItem}>
-                    <div>
-                      <strong>{tx.transaction_type}</strong>
-                      <p style={styles.txDate}>{new Date(tx.timestamp).toLocaleString()}</p>
-                    </div>
-
+              {/* RECENT TRANSACTIONS */}
+              <div className="col-12 col-md-7">
+                <div className="bg-white rounded-3 p-4 h-100" style={{ border: "0.5px solid #E2E8F0" }}>
+                  <div className="d-flex justify-content-between align-items-center mb-3">
+                    <h6 className="fw-semibold mb-0">Recent transactions</h6>
                     <span
-                      style={{
-                        color: tx.transaction_type === "DEPOSIT" ? "#22C55E" : "#EF4444",
-                        fontWeight: "600",
-                      }}
+                      className="text-decoration-none"
+                      style={{ fontSize: 12, color: "#1E3A8A", cursor: "pointer" }}
+                      onClick={() => navigate("/transactions")}
                     >
-                      {tx.transaction_type === "DEPOSIT" ? "+" : "-"} GMD {Number(tx.amount).toLocaleString()}
+                      View all →
                     </span>
                   </div>
-                ))
-              )}
+
+                  {transactions.length === 0 ? (
+                    <div className="text-center py-4">
+                      <i className="bi bi-inbox fs-2 text-secondary"></i>
+                      <p className="text-secondary mt-2 mb-0" style={{ fontSize: 13 }}>No transactions yet</p>
+                    </div>
+                  ) : (
+                    transactions.slice(0, 5).map((tx) => (
+                      <div
+                        key={tx.id}
+                        className="d-flex justify-content-between align-items-center py-2"
+                        style={{ borderBottom: "0.5px solid #F1F5F9" }}
+                      >
+                        <div className="d-flex align-items-center gap-3">
+                          <div
+                            className="d-flex align-items-center justify-content-center rounded-circle"
+                            style={{
+                              width: 36, height: 36,
+                              background: tx.transaction_type === "DEPOSIT" ? "#DCFCE7" : "#FEE2E2",
+                            }}
+                          >
+                            <i
+                              className={`bi ${tx.transaction_type === "DEPOSIT" ? "bi-arrow-down text-success" : "bi-arrow-up text-danger"}`}
+                              style={{ fontSize: 14 }}
+                            ></i>
+                          </div>
+                          <div>
+                            <div className="fw-semibold" style={{ fontSize: 13 }}>
+                              {tx.transaction_type}
+                            </div>
+                            <div className="text-secondary" style={{ fontSize: 11 }}>
+                              {new Date(tx.timestamp).toLocaleString()}
+                            </div>
+                          </div>
+                        </div>
+                        <span
+                          className="fw-semibold"
+                          style={{
+                            fontSize: 13,
+                            color: tx.transaction_type === "DEPOSIT" ? "#16A34A" : "#DC2626",
+                          }}
+                        >
+                          {tx.transaction_type === "DEPOSIT" ? "+" : "-"} GMD {Number(tx.amount).toLocaleString()}
+                        </span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* QUICK ACTIONS + LOAN */}
+              <div className="col-12 col-md-5 d-flex flex-column gap-3">
+
+                {/* QUICK ACTIONS */}
+                <div className="bg-white rounded-3 p-4" style={{ border: "0.5px solid #E2E8F0" }}>
+                  <h6 className="fw-semibold mb-3">Quick actions</h6>
+                  <div className="d-flex flex-column gap-2">
+                    {[
+                      { icon: "bi-arrow-up-circle", label: "Send money", path: "/transactions" },
+                      { icon: "bi-arrow-down-circle", label: "Deposit funds", path: "/transactions" },
+                      { icon: "bi-cash-stack", label: "Apply for loan", path: "/loans" },
+                      { icon: "bi-file-earmark-text", label: "View statement", path: "/transactions" },
+                    ].map(({ icon, label, path }) => (
+                      <button
+                        key={label}
+                        className="btn btn-light d-flex align-items-center gap-2 text-start"
+                        style={{ fontSize: 13, border: "0.5px solid #E2E8F0" }}
+                        onClick={() => navigate(path)}
+                      >
+                        <i className={`bi ${icon}`} style={{ color: "#1E3A8A", fontSize: 16 }}></i>
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* QUICK LOAN */}
+                <div className="bg-white rounded-3 p-4" style={{ border: "0.5px solid #E2E8F0" }}>
+                  <h6 className="fw-semibold mb-3">Quick loan apply</h6>
+                  {loanMsg.text && (
+                    <div className={`alert alert-${loanMsg.type} py-2 px-3 mb-3`} style={{ fontSize: 12 }}>
+                      {loanMsg.text}
+                    </div>
+                  )}
+                  <div className="input-group">
+                    <span className="input-group-text bg-white" style={{ fontSize: 13 }}>GMD</span>
+                    <input
+                      type="number"
+                      className="form-control"
+                      placeholder="Enter amount"
+                      value={loanAmount}
+                      onChange={(e) => setLoanAmount(e.target.value)}
+                      style={{ fontSize: 13 }}
+                    />
+                    <button
+                      className="btn text-white"
+                      style={{ background: "#1E3A8A", fontSize: 13 }}
+                      onClick={applyLoan}
+                      disabled={loanLoading}
+                    >
+                      {loanLoading ? <span className="spinner-border spinner-border-sm"></span> : "Apply"}
+                    </button>
+                  </div>
+                </div>
+
+              </div>
             </div>
           </div>
         )}
@@ -118,69 +268,3 @@ export default function Dashboard() {
     </div>
   );
 }
-
-const styles = {
-  page: {
-    display: "flex",
-    minHeight: "100vh",
-    background: "linear-gradient(135deg, #020617, #1E3A8A)",
-  },
-  main: { flex: 1 },
-  container: { padding: "25px", color: "white" },
-  balanceCard: {
-    padding: "25px",
-    borderRadius: "15px",
-    background: "linear-gradient(135deg, #2563EB, #1E40AF)",
-    marginBottom: "25px",
-  },
-  loanSection: { marginBottom: "25px" },
-  loanForm: { display: "flex", gap: "10px", marginTop: "10px" },
-  input: {
-    padding: "10px",
-    borderRadius: "8px",
-    border: "none",
-    width: "200px",
-  },
-  loanBtn: {
-    padding: "10px 15px",
-    borderRadius: "8px",
-    border: "none",
-    background: "#2563EB",
-    color: "white",
-    cursor: "pointer",
-  },
-  transactionBox: {
-    background: "white",
-    padding: "20px",
-    borderRadius: "12px",
-    color: "black",
-  },
-  txItem: {
-    display: "flex",
-    justifyContent: "space-between",
-    padding: "10px 0",
-    borderBottom: "1px solid #eee",
-  },
-  txDate: { fontSize: "12px", color: "#666" },
-  emptyWrapper: {
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    height: "80vh",
-  },
-  emptyCard: {
-    background: "white",
-    padding: "40px",
-    borderRadius: "12px",
-    textAlign: "center",
-  },
-  primaryBtn: {
-    marginTop: "15px",
-    padding: "12px 20px",
-    background: "#1E3A8A",
-    color: "white",
-    border: "none",
-    borderRadius: "8px",
-    cursor: "pointer",
-  },
-};
