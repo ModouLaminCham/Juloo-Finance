@@ -41,7 +41,7 @@ export default function Navbar() {
             color: "#1E3A8A",
           }}
         >
-Juloo Finance        </span>
+Juloo Finance  </span>
       </div>
 
       {/* CENTER LINKS */}

@@ -66,7 +66,7 @@ export default function Landing() {
           className="fw-semibold text-white mb-3"
           style={{ fontSize: "clamp(28px, 5vw, 48px)", lineHeight: 1.25, maxWidth: 600 }}
         >
-          Modern banking for{" "}
+          Modern Banking for{" "}
           <span style={{ color: "#3B82F6" }}>The Gambia</span>
         </h1>
 

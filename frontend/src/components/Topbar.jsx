@@ -1,13 +1,34 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Bell, UserCircle, LogOut, LayoutDashboard } from "lucide-react";
-import logo from "../assets/logo.jpg";
+import { useState, useRef, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useUser } from "../context/UserContext";
+
+const pageTitles = {
+  "/dashboard": { title: "Dashboard", icon: "bi-grid-1x2" },
+  "/accounts": { title: "Accounts", icon: "bi-credit-card" },
+  "/transactions": { title: "Transactions", icon: "bi-arrow-left-right" },
+  "/loans": { title: "Loans", icon: "bi-cash-stack" },
+  "/create-account": { title: "Create Account", icon: "bi-plus-circle" },
+};
 
 export default function Topbar() {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, logout } = useUser();
+  const dropdownRef = useRef(null);
+
+  const page = pageTitles[location.pathname] || { title: "Dashboard", icon: "bi-grid-1x2" };
+
+  // close dropdown when clicking outside
+  useEffect(() => {
+    const handler = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -15,44 +36,117 @@ export default function Topbar() {
   };
 
   return (
-    <div style={styles.topbar}>
-      <div style={styles.left}>
-        <img src={logo} alt="Bank Logo" style={styles.logo} />
-
-        <div>
-          <h4 style={styles.title}>Juloo Finance</h4>
-          <p style={styles.subtitle}>Secure Digital Banking Platform</p>
-        </div>
-
-        <div style={styles.pageTag}>
-          <LayoutDashboard size={14} />
-          <span>Dashboard</span>
-        </div>
+    <div
+      className="d-flex align-items-center justify-content-between px-4"
+      style={{
+        height: 60,
+        background: "#fff",
+        borderBottom: "0.5px solid #E2E8F0",
+        flexShrink: 0,
+        position: "sticky",
+        top: 0,
+        zIndex: 50,
+      }}
+    >
+      {/* PAGE TITLE */}
+      <div className="d-flex align-items-center gap-2">
+        <i
+          className={`bi ${page.icon}`}
+          style={{ fontSize: 16, color: "#1E3A8A" }}
+        ></i>
+        <span className="fw-semibold" style={{ fontSize: 14 }}>{page.title}</span>
       </div>
 
-      <div style={styles.right}>
-        <div style={styles.iconBtn}>
-          <Bell size={18} />
-        </div>
+      {/* RIGHT SIDE */}
+      <div className="d-flex align-items-center gap-2">
 
-        <div style={{ position: "relative" }}>
-          <div style={styles.userCard} onClick={() => setOpen((v) => !v)}>
-            <UserCircle size={18} />
-            <span>Welcome, {user?.username || "User"}</span>
-          </div>
+        {/* NOTIFICATION BELL */}
+        <button
+          className="btn d-flex align-items-center justify-content-center rounded-3"
+          style={{
+            width: 36,
+            height: 36,
+            background: "#F8FAFC",
+            border: "0.5px solid #E2E8F0",
+          }}
+        >
+          <i className="bi bi-bell" style={{ fontSize: 15, color: "#64748B" }}></i>
+        </button>
+
+        {/* USER DROPDOWN */}
+        <div ref={dropdownRef} style={{ position: "relative" }}>
+          <button
+            className="btn d-flex align-items-center gap-2 px-3 py-2 rounded-3"
+            style={{
+              background: "#F8FAFC",
+              border: "0.5px solid #E2E8F0",
+              fontSize: 13,
+            }}
+            onClick={() => setOpen((v) => !v)}
+          >
+            <div
+              className="d-flex align-items-center justify-content-center rounded-circle text-white fw-semibold"
+              style={{ width: 26, height: 26, background: "#1E3A8A", fontSize: 11 }}
+            >
+              {user?.username?.[0]?.toUpperCase() || "U"}
+            </div>
+            <span className="d-none d-md-inline" style={{ color: "#0F172A" }}>
+              {user?.username || "User"}
+            </span>
+            <i
+              className="bi bi-chevron-down"
+              style={{ fontSize: 11, color: "#64748B" }}
+            ></i>
+          </button>
 
           {open && (
-            <div style={styles.dropdown}>
-              <div style={styles.menuItem} onClick={() => navigate("/dashboard")}>
-                <LayoutDashboard size={16} />
-                Dashboard
+            <div
+              className="bg-white rounded-3 py-1"
+              style={{
+                position: "absolute",
+                right: 0,
+                top: 44,
+                width: 180,
+                border: "0.5px solid #E2E8F0",
+                zIndex: 200,
+              }}
+            >
+              <div
+                className="px-3 py-2"
+                style={{ borderBottom: "0.5px solid #F1F5F9" }}
+              >
+                <div className="fw-semibold" style={{ fontSize: 13 }}>
+                  {user?.username || "User"}
+                </div>
+                <div className="text-secondary" style={{ fontSize: 11 }}>
+                  Personal account
+                </div>
               </div>
 
-              <div style={styles.divider} />
+              {[
+                { icon: "bi-grid-1x2", label: "Dashboard", path: "/dashboard" },
+                { icon: "bi-person", label: "Profile", path: "/accounts" },
+              ].map(({ icon, label, path }) => (
+                <button
+                  key={label}
+                  className="btn d-flex align-items-center gap-2 w-100 px-3 py-2 rounded-0"
+                  style={{ fontSize: 13, color: "#0F172A", background: "transparent", border: "none" }}
+                  onClick={() => { navigate(path); setOpen(false); }}
+                >
+                  <i className={`bi ${icon}`} style={{ fontSize: 14, color: "#64748B" }}></i>
+                  {label}
+                </button>
+              ))}
 
-              <div style={{ ...styles.menuItem, color: "#DC2626" }} onClick={handleLogout}>
-                <LogOut size={16} />
-                Logout
+              <div style={{ borderTop: "0.5px solid #F1F5F9" }}>
+                <button
+                  className="btn d-flex align-items-center gap-2 w-100 px-3 py-2 rounded-0"
+                  style={{ fontSize: 13, color: "#DC2626", background: "transparent", border: "none" }}
+                  onClick={handleLogout}
+                >
+                  <i className="bi bi-box-arrow-left" style={{ fontSize: 14 }}></i>
+                  Logout
+                </button>
               </div>
             </div>
           )}
@@ -61,99 +155,3 @@ export default function Topbar() {
     </div>
   );
 }
-
-const styles = {
-  topbar: {
-    height: "65px",
-    padding: "0 22px",
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    background: "linear-gradient(90deg, #0F172A, #1E3A8A)",
-    color: "white",
-    boxShadow: "0 8px 20px rgba(0,0,0,0.15)",
-  },
-  left: {
-    display: "flex",
-    alignItems: "center",
-    gap: "12px",
-  },
-  logo: {
-    width: "40px",
-    height: "40px",
-    borderRadius: "10px",
-    objectFit: "cover",
-    border: "2px solid rgba(255,255,255,0.2)",
-  },
-  title: {
-    margin: 0,
-    fontSize: "16px",
-    fontWeight: "800",
-  },
-  subtitle: {
-    margin: 0,
-    fontSize: "12px",
-    color: "#CBD5E1",
-  },
-  pageTag: {
-    marginLeft: "15px",
-    display: "flex",
-    alignItems: "center",
-    gap: "6px",
-    fontSize: "12px",
-    padding: "6px 10px",
-    borderRadius: "20px",
-    background: "rgba(255,255,255,0.08)",
-  },
-  right: {
-    display: "flex",
-    alignItems: "center",
-    gap: "12px",
-  },
-  iconBtn: {
-    width: "38px",
-    height: "38px",
-    borderRadius: "10px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    background: "rgba(255,255,255,0.08)",
-    cursor: "pointer",
-  },
-  userCard: {
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-    padding: "8px 12px",
-    borderRadius: "12px",
-    background: "rgba(255,255,255,0.08)",
-    fontSize: "13px",
-    fontWeight: "600",
-    cursor: "pointer",
-  },
-  dropdown: {
-    position: "absolute",
-    right: 0,
-    top: "50px",
-    width: "180px",
-    background: "white",
-    color: "#0F172A",
-    borderRadius: "12px",
-    boxShadow: "0 15px 30px rgba(0,0,0,0.15)",
-    overflow: "hidden",
-    zIndex: 100,
-  },
-  menuItem: {
-    display: "flex",
-    alignItems: "center",
-    gap: "10px",
-    padding: "10px 12px",
-    fontSize: "13px",
-    cursor: "pointer",
-  },
-  divider: {
-    height: "1px",
-    background: "#E5E7EB",
-    margin: "5px 0",
-  },
-};

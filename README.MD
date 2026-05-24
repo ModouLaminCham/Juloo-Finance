@@ -1,9 +1,4 @@
-# Juloo Finance
 
-Juloo Finance is a full-stack digital banking application with:
-
-- `frontend`: React + Vite
-- `backend`: Django REST Framework + JWT auth
 
 ## One-Command Run (Docker)
 
@@ -57,6 +52,11 @@ npm run dev
 
 For local frontend development, you can point API calls to backend by setting:
 
-```bash
+```bash# Juloo Finance
+
+Juloo Finance is a full-stack digital banking application with:
+
+- `frontend`: React + Vite
+- `backend`: Django REST Framework + JWT auth
 VITE_API_BASE_URL=http://127.0.0.1:8000/api/
 ```
