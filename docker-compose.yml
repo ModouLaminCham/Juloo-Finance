@@ -1,15 +1,32 @@
 services:
+  db:
+    image: postgres:16
+    container_name: juloo-db
+    environment:
+      POSTGRES_DB: juloo_finance
+      POSTGRES_USER: juloo
+      POSTGRES_PASSWORD: juloo_secret
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U juloo -d juloo_finance"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
   backend:
     build:
       context: ./backend
     container_name: juloo-backend
+    depends_on:
+      db:
+        condition: service_healthy
     environment:
       DJANGO_DEBUG: "1"
       DJANGO_ALLOWED_HOSTS: "*"
       CORS_ALLOW_ALL_ORIGINS: "1"
-      SQLITE_PATH: /app/data/db.sqlite3
-    volumes:
-      - backend_data:/app/data
+      DATABASE_URL: "postgres://juloo:juloo_secret@db:5432/juloo_finance"
     expose:
       - "8000"
     restart: unless-stopped
@@ -25,4 +42,4 @@ services:
     restart: unless-stopped
 
 volumes:
-  backend_data:
+  postgres_data:
