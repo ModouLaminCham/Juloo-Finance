@@ -64,7 +64,7 @@ class AuthAndAccountFlowTests(TestCase):
         )
         self.assertEqual(loan_apply_response.status_code, 201)
 
-        loans_response = self.client.get("/api/loans/mine/")
+        loans_response = self.client.get("/api/loans/my-loans/")
         self.assertEqual(loans_response.status_code, 200)
         self.assertEqual(len(loans_response.data), 1)
         self.assertEqual(loans_response.data[0]["status"], "PENDING")

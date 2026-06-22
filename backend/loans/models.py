@@ -15,7 +15,7 @@ class Loan(models.Model):
     account = models.ForeignKey(Account, on_delete=models.CASCADE, related_name="loans")
     loan_type = models.CharField(max_length=50)
     amount = models.DecimalField(max_digits=12, decimal_places=2)
-    interest_rate = models.DecimalField(max_digits=5, decimal_places=2, default=10.00)
+    interest_rate = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal("10.00"))
     duration_months = models.IntegerField(default=12)
     collateral = models.CharField(max_length=255, blank=True, default="")
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="PENDING")
@@ -24,8 +24,7 @@ class Loan(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def save(self, *args, **kwargs):
-        # Auto calculate total repayment and remaining balance on save
-        interest = self.amount * (self.interest_rate / Decimal("100"))
+        interest = self.amount * (Decimal(str(self.interest_rate)) / Decimal("100"))
         self.total_repayment = self.amount + interest
         if self.remaining_balance == 0:
             self.remaining_balance = self.total_repayment
