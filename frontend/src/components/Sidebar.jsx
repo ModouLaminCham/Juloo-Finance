@@ -9,10 +9,16 @@ const navItems = [
   { path: "/create-account", icon: "bi-plus-circle", label: "Create Account" },
 ];
 
+const adminNavItems = [
+  { path: "/admin/loans", icon: "bi-shield-check", label: "Admin Loans" },
+];
+
 export default function Sidebar({ hasAccount }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { logout } = useUser();
+
+  const { logout, isStaff } = useUser();
 
   const handleLogout = () => {
     logout();
@@ -72,6 +78,36 @@ export default function Sidebar({ hasAccount }) {
               </Link>
             );
           })}
+
+          {/* ADMIN SECTION */}
+          {isStaff && (
+            <>
+              <hr style={{ borderColor: "#1E293B", margin: "8px 0" }} />
+              <div style={{ fontSize: 10, color: "#64748B", padding: "4px 12px", textTransform: "uppercase", letterSpacing: 1 }}>
+                Admin
+              </div>
+              {adminNavItems.map(({ path, icon, label }) => {
+                const active = location.pathname === path;
+                return (
+                  <Link
+                    key={path}
+                    to={path}
+                    className="d-flex align-items-center gap-3 px-3 py-2 rounded-3 text-decoration-none"
+                    style={{
+                      fontSize: 13,
+                      color: active ? "#fff" : "#94A3B8",
+                      background: active ? "#1E293B" : "transparent",
+                      borderRight: active ? "2px solid #3B82F6" : "2px solid transparent",
+                      transition: "all 0.15s",
+                    }}
+                  >
+                    <i className={`bi ${icon}`} style={{ fontSize: 16 }}></i>
+                    {label}
+                  </Link>
+                );
+              })}
+            </>
+          )}
         </div>
 
         {/* LOGOUT */}

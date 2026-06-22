@@ -6,9 +6,11 @@ import Dashboard from "./pages/Dashboard";
 import Accounts from "./pages/Accounts";
 import Transactions from "./pages/Transactions";
 import Loans from "./pages/Loans";
+import AdminLoans from "./pages/AdminLoans";
 import CreateAccount from "./pages/CreateAccount";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
+import AdminRoute from "./components/AdminRoute";
 
 export default function App() {
   return (
@@ -56,6 +58,14 @@ export default function App() {
               <ProtectedRoute>
                 <CreateAccount />
               </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/loans"
+            element={
+              <AdminRoute>
+                <AdminLoans />
+              </AdminRoute>
             }
           />
           <Route path="*" element={<NotFound />} />

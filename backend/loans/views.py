@@ -1,10 +1,10 @@
 from decimal import Decimal, InvalidOperation
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from accounts.models import Account
 from .models import Loan, Repayment
-from .serializers import LoanSerializer, RepaymentSerializer
+from .serializers import LoanSerializer, RepaymentSerializer, AdminLoanSerializer, AdminLoanStatusSerializer
 
 
 class ApplyLoanView(APIView):
@@ -109,3 +109,54 @@ class RepayLoanView(APIView):
         loan.save()
         serializer = LoanSerializer(loan)
         return Response(serializer.data)
+
+
+class AdminLoanListView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def get(self, request):
+        loans = Loan.objects.select_related("account__user").all().order_by("-created_at")
+        serializer = AdminLoanSerializer(loans, many=True)
+        return Response(serializer.data)
+
+
+class AdminLoanDetailView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def get(self, _, loan_id):
+        try:
+            loan = Loan.objects.select_related("account__user").get(id=loan_id)
+        except Loan.DoesNotExist:
+            return Response({"detail": "Loan not found"}, status=404)
+        serializer = AdminLoanSerializer(loan)
+        return Response(serializer.data)
+
+    def patch(self, request, loan_id):
+        try:
+            loan = Loan.objects.select_related("account__user").get(id=loan_id)
+        except Loan.DoesNotExist:
+            return Response({"detail": "Loan not found"}, status=404)
+
+        serializer = AdminLoanStatusSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        new_status = serializer.validated_data["status"]
+
+        valid_transitions = {
+            "PENDING": ["APPROVED", "REJECTED"],
+            "APPROVED": ["ACTIVE", "REJECTED"],
+            "ACTIVE": ["CLOSED"],
+            "REJECTED": [],
+            "CLOSED": [],
+        }
+
+        if new_status not in valid_transitions.get(loan.status, []):
+            return Response(
+                {"detail": f"Cannot transition from {loan.status} to {new_status}"},
+                status=400,
+            )
+
+        loan.status = new_status
+        loan.save(update_fields=["status"])
+        out = AdminLoanSerializer(loan)
+        return Response(out.data)

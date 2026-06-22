@@ -58,18 +58,21 @@ export function UserProvider({ children }) {
     refreshData();
   }, [refreshData]);
 
+  const isStaff = user?.is_staff ?? false;
+
   const value = useMemo(
     () => ({
       user,
       account,
       hasAccount: Boolean(account),
       isAuthenticated: Boolean(user),
+      isStaff,
       loading,
       loginWithTokens,
       refreshData,
       logout,
     }),
-    [user, account, loading, loginWithTokens, refreshData, logout]
+    [user, account, isStaff, loading, loginWithTokens, refreshData, logout]
   );
 
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
