@@ -16,8 +16,6 @@ const adminNavItems = [
 export default function Sidebar({ hasAccount }) {
   const location = useLocation();
   const navigate = useNavigate();
-  const { logout } = useUser();
-
   const { logout, isStaff } = useUser();
 
   const handleLogout = () => {
