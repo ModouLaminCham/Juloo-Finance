@@ -42,7 +42,7 @@ export default function Loans() {
       const res = await api.get("loans/my-loans/");
       setLoans(res.data);
     } catch {
-      setErrorAuto("Failed to load loans.");
+      setErrorAuto();
     }
   };
 
